@@ -91,7 +91,6 @@ def SMOTE(X, n_samples, k=5, dist_power=2, multiple=False, sample_weight=None,
         return smoted_X, np.concatenate((sample_weight, weight_smoted))
 
 def generate_synthetic_data(size,dim=2, centroids=None, centroid_dispersion=1):
-    print size
     size = int(size)
     all_data_part = []
     for point in centroids:
@@ -111,14 +110,11 @@ def generate_outlier(size, dim=2, space=1):
 
 def generate_dataset(size, outliers_part=0.12, dim=2, centroids=None, centroid_dispersion=1):
     inliers_part = 1.0 - outliers_part
-    print size * inliers_part
     inliers = generate_synthetic_data(size * inliers_part, 
                                                dim, centroids, 
                                                centroid_dispersion)
-    print len(inliers)
     space = inliers.max() - inliers.min()
     outliers = generate_outlier(size*outliers_part, dim, space=space)
-    print len(outliers)
     data = np.concatenate([inliers, outliers], axis=0)
     data = pd.DataFrame(data)
     data['label'] = ['target'] * len(inliers) + ['outlier'] * len(outliers)
@@ -328,11 +324,8 @@ def check_all(data_file):
     all_emperic = zeros(final_shape)
     all_vc = zeros(final_shape)
     for fraction_index, fraction in enumerate(all_anomaly_fraction):
-        print fraction
         for nu_index, nu in enumerate(all_nu):
-            print nu
             for gamma_index, gamma in enumerate(all_gammas):
-                print gamma
             	C = 1./len(data)/nu
                 model = SVDD(kernel='rbf', gamma=gamma, C=C)
                 all_false_normal[fraction_index, nu_index, gamma_index], \
@@ -370,11 +363,8 @@ def check_all_second(data_file):
     all_emperic = zeros(final_shape)
     all_vc = zeros(final_shape)
     for fraction_index, fraction in enumerate(all_anomaly_fraction):
-        print fraction
         for nu_index, nu in enumerate(all_nu):
-            print nu
             for gamma_index, gamma in enumerate(all_gammas):
-                print gamma
             	C = 1./len(data)/nu
                 model = SVDD(kernel='rbf', gamma=gamma, C=C)
                 all_false_normal[fraction_index, nu_index, gamma_index], \
@@ -400,7 +390,7 @@ if __name__ == '__main__':
     log_file = open('res.log', 'w')
     all_files = os.listdir('./csv_data_set')
     for index, file_name in enumerate(all_files):
-        print index
+        print 'processed {}'.format(index), '{} left'.format(len(all_files) - index)
         try:
             check_all(file_name)
             check_all_second(file_name)
