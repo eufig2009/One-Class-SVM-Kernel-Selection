@@ -272,6 +272,7 @@ def single_experiment_false_fraction(data, gamma, nu):
 def generate_anomalies(data, anomaly_fraction=0.1):
     fraction = anomaly_fraction / (1. - anomaly_fraction)
     anomaly_count = int(len(data) * anomaly_fraction)
+    print anomaly_count
     anomaly = rand(anomaly_count, data.shape[1])
     anomaly -= 0.5
     anomaly *= (data.max(axis=0) - data.min(axis=0))[newaxis, :]
@@ -281,7 +282,7 @@ def generate_anomalies(data, anomaly_fraction=0.1):
 
 def first_experiment(data, model, anomaly_fraction=0.1):
     risk_functions = [support_vectors_metric, kernel_metric, validate_classifier_by_random_points,
-    combinatorial_dimension_metric, slice_probability_metric]
+     slice_probability_metric]
     train, test = train_test_split(data, train_size=0.7)
     model.fit(train)
     anomaly_test = generate_anomalies(test, anomaly_fraction)
@@ -296,7 +297,7 @@ def first_experiment(data, model, anomaly_fraction=0.1):
 
 def second_experiment(data, model, anomaly_fraction):
     risk_functions = [support_vectors_metric, kernel_metric, validate_classifier_by_random_points,
-    combinatorial_dimension_metric, slice_probability_metric]
+    slice_probability_metric]
     anomalies = generate_anomalies(data, anomaly_fraction)
     model.fit(concatenate([data.values, anomalies]))
     anomaly_prediction = model.predict(anomalies)
@@ -312,89 +313,89 @@ def second_experiment(data, model, anomaly_fraction):
 def check_all(data_file):
     data = pd.read_csv('./csv_data_set/{}'.format(data_file))
     data = data.query("label == 'target'").drop(['label'], axis=1)
+    iteration_count = 20
     all_anomaly_fraction = [0.01, 0.05, 0.1, 0.2, 0.3]
     all_nu = [0.01, 0.05, 0.1, 0.2, 0.3]
-    all_gammas = logspace(-10, 10, 50)
-    final_shape = (5, 5, 50)
+    all_gammas = logspace(-10, 10, 100)
+    final_shape = (iteration_count, len(all_nu), len(all_anomaly_fraction), len(all_gammas))
     all_false_anomaly = zeros(final_shape)
     all_false_normal = zeros(final_shape)
     all_kernel = zeros(final_shape)
     all_support = zeros(final_shape)
     all_smote = zeros(final_shape)
     all_emperic = zeros(final_shape)
-    all_vc = zeros(final_shape)
-    for fraction_index, fraction in enumerate(all_anomaly_fraction):
-        for nu_index, nu in enumerate(all_nu):
-            for gamma_index, gamma in enumerate(all_gammas):
-            	C = 1./len(data)/nu
-                model = SVDD(kernel='rbf', gamma=gamma, C=C)
-                all_false_normal[fraction_index, nu_index, gamma_index], \
-                all_false_anomaly[fraction_index, nu_index, gamma_index],\
-                tmp = first_experiment(data, model, fraction)
-
-                all_support[fraction_index, nu_index, gamma_index] = tmp[0]
-                all_kernel[fraction_index, nu_index, gamma_index] = tmp[1]
-                all_smote[fraction_index, nu_index, gamma_index] = tmp[2]
-                all_vc[fraction_index, nu_index, gamma_index] = tmp[3]
-                all_emperic[fraction_index, nu_index, gamma_index] = tmp[4]
+    for counter in range(iteration_count):
+        for fraction_index, fraction in enumerate(all_anomaly_fraction):
+            for nu_index, nu in enumerate(all_nu):
+                for gamma_index, gamma in enumerate(all_gammas):
+            	    C = 1./len(data)/nu
+                    model = SVDD(kernel='rbf', gamma=gamma, C=C)
+                    false_normal, false_anomaly, tmp = first_experiment(data, model, fraction)
+                    all_false_normal[counter, fraction_index, 
+                                        nu_index, gamma_index] += false_normal
+                    all_false_anomaly[counter, fraction_index, 
+                                        nu_index, gamma_index] += false_anomaly
+                    all_support[counter, fraction_index, nu_index, gamma_index] += tmp[0]
+                    all_kernel[counter, fraction_index, nu_index, gamma_index] += tmp[1]
+                    all_smote[counter, fraction_index, nu_index, gamma_index] += tmp[2]
+                    all_emperic[counter, fraction_index, nu_index, gamma_index] += tmp[3]
 
     name = data_file[:-4]
-    save('{}_false_normal.csv'.format(name), all_false_normal)
-    save('{}_false_anomaly.csv'.format(name), all_false_anomaly)
-    save(arr=all_support, file='{}_support.csv'.format(name))
-    save(arr=all_emperic, file='{}_all_emperic.csv'.format(name))
-    save(arr=all_smote, file='{}_all_smote.csv'.format(name))
-    save(arr=all_kernel, file='{}_all_kernel.csv'.format(name))
-    save(arr=all_vc, file='{}_all_vc.csv'.format(name))
+    save('{}_false_normal.csv'.format(name), all_false_normal/iteration_count)
+    save('{}_false_anomaly.csv'.format(name), all_false_anomaly/iteration_count)
+    save(arr=all_support/iteration_count, file='{}_support.csv'.format(name))
+    save(arr=all_emperic/iteration_count, file='{}_all_emperic.csv'.format(name))
+    save(arr=all_smote/iteration_count, file='{}_all_smote.csv'.format(name))
+    save(arr=all_kernel/iteration_count, file='{}_all_kernel.csv'.format(name))
 
 
 def check_all_second(data_file):
     data = pd.read_csv('./csv_data_set/{}'.format(data_file))
     data = data.query("label == 'target'").drop(['label'], axis=1)
-    all_anomaly_fraction = [0.01, 0.05, 0.1, 0.2, 0.3]
-    all_nu = [0.01, 0.05, 0.1, 0.2, 0.3]
-    all_gammas = logspace(-10, 10, 50)
-    final_shape = (5, 5, 50)
+    all_anomaly_fraction = [ 0.1]
+    all_nu = [0.1]
+    all_gammas = logspace(-10, 10, 100)
+    final_shape = (10, 5, 5, 100)
     all_false_anomaly = zeros(final_shape)
     all_false_normal = zeros(final_shape)
     all_kernel = zeros(final_shape)
     all_support = zeros(final_shape)
     all_smote = zeros(final_shape)
     all_emperic = zeros(final_shape)
-    all_vc = zeros(final_shape)
-    for fraction_index, fraction in enumerate(all_anomaly_fraction):
-        for nu_index, nu in enumerate(all_nu):
-            for gamma_index, gamma in enumerate(all_gammas):
-            	C = 1./len(data)/nu
-                model = SVDD(kernel='rbf', gamma=gamma, C=C)
-                all_false_normal[fraction_index, nu_index, gamma_index], \
-                all_false_anomaly[fraction_index, nu_index, gamma_index],\
-                tmp = second_experiment(data, model, fraction)
-
-                all_support[fraction_index, nu_index, gamma_index] = tmp[0]
-                all_kernel[fraction_index, nu_index, gamma_index] = tmp[1]
-                all_smote[fraction_index, nu_index, gamma_index] = tmp[2]
-                all_vc[fraction_index, nu_index, gamma_index] = tmp[3]
-                all_emperic[fraction_index, nu_index, gamma_index] = tmp[4]
+    for counter in range(10):
+        for fraction_index, fraction in enumerate(all_anomaly_fraction):
+            for nu_index, nu in enumerate(all_nu):
+                for gamma_index, gamma in enumerate(all_gammas):
+            	    C = 1./len(data)/nu
+                    model = SVDD(kernel='rbf', gamma=gamma, C=C)
+                    false_anomaly = 0
+                    false_normal = 0
+                    false_normal, false_anomaly,\
+                    tmp = second_experiment(data, model, fraction)
+                    all_false_normal[counter, fraction_index, nu_index, gamma_index] += false_normal
+                    all_false_anomaly[counter, fraction_index, nu_index, gamma_index] += false_anomaly
+                    all_support[counter, fraction_index, nu_index, gamma_index] += tmp[0]
+                    all_kernel[counter, fraction_index, nu_index, gamma_index] += tmp[1]
+                    all_smote[counter, fraction_index, nu_index, gamma_index] += tmp[2]
+                    all_emperic[counter, fraction_index, nu_index, gamma_index] += tmp[3]
 
     name = data_file[:-4]
-    save('{}_false_normal_second.csv'.format(name), all_false_normal)
-    save('{}_false_anomaly_second.csv'.format(name), all_false_anomaly)
-    save(arr=all_support, file='{}_support_second.csv'.format(name))
-    save(arr=all_emperic, file='{}_all_emperic_second.csv'.format(name))
-    save(arr=all_smote, file='{}_all_smote_second.csv'.format(name))
-    save(arr=all_kernel, file='{}_all_kernel_second.csv'.format(name))
-    save(arr=all_vc, file='{}_all_vc_second.csv'.format(name))
+    save('{}_false_normal_second.csv'.format(name), all_false_normal * 0.1)
+    save('{}_false_anomaly_second.csv'.format(name), all_false_anomaly * 0.1)
+    save(arr=all_support/10, file='{}_support_second.csv'.format(name))
+    save(arr=all_emperic/10, file='{}_all_emperic_second.csv'.format(name))
+    save(arr=all_smote/10, file='{}_all_smote_second.csv'.format(name))
+    save(arr=all_kernel/10, file='{}_all_kernel_second.csv'.format(name))
 
 if __name__ == '__main__':
-    log_file = open('res.log', 'w')
-    all_files = os.listdir('./csv_data_set')
-    for index, file_name in enumerate(all_files):
-        print 'processed {}'.format(index), '{} left'.format(len(all_files) - index)
-        try:
-            check_all(file_name)
-            check_all_second(file_name)
-            log_file.write('{} is finished\n'.format(file_name))
-        except Exception, exception_text:
-            log_file.write('{}\n'.format(exception_text))
-
+    #log_file = open('res.log', 'w')
+    #all_files = os.listdir('./csv_data_set')
+    #for index, file_name in enumerate(all_files):
+    #    print 'processed {}'.format(index), '{} left'.format(len(all_files) - index)
+    #    try:
+    #        check_all(file_name)
+    #        check_all_second(file_name)
+    #        log_file.write('{} is finished\n'.format(file_name))
+    #    except Exception, exception_text:
+    #        log_file.write('{}\n'.format(exception_text))
+    check_all('Housing MEDV<35.csv')
