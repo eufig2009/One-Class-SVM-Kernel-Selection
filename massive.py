@@ -272,7 +272,6 @@ def single_experiment_false_fraction(data, gamma, nu):
 def generate_anomalies(data, anomaly_fraction=0.1):
     fraction = anomaly_fraction / (1. - anomaly_fraction)
     anomaly_count = int(len(data) * anomaly_fraction)
-    print anomaly_count
     anomaly = rand(anomaly_count, data.shape[1])
     anomaly -= 0.5
     anomaly *= (data.max(axis=0) - data.min(axis=0))[newaxis, :]
@@ -352,8 +351,8 @@ def check_all(data_file):
 def check_all_second(data_file):
     data = pd.read_csv('./csv_data_set/{}'.format(data_file))
     data = data.query("label == 'target'").drop(['label'], axis=1)
-    all_anomaly_fraction = [ 0.1]
-    all_nu = [0.1]
+    all_anomaly_fraction = [0.05, 0.1]
+    all_nu = [0.05, 0.1]
     all_gammas = logspace(-10, 10, 100)
     final_shape = (10, 5, 5, 100)
     all_false_anomaly = zeros(final_shape)
@@ -388,14 +387,13 @@ def check_all_second(data_file):
     save(arr=all_kernel/10, file='{}_all_kernel_second.csv'.format(name))
 
 if __name__ == '__main__':
-    #log_file = open('res.log', 'w')
-    #all_files = os.listdir('./csv_data_set')
-    #for index, file_name in enumerate(all_files):
-    #    print 'processed {}'.format(index), '{} left'.format(len(all_files) - index)
-    #    try:
-    #        check_all(file_name)
-    #        check_all_second(file_name)
-    #        log_file.write('{} is finished\n'.format(file_name))
-    #    except Exception, exception_text:
-    #        log_file.write('{}\n'.format(exception_text))
-    check_all('Housing MEDV<35.csv')
+    log_file = open('res.log', 'w')
+    all_files = os.listdir('./csv_data_set')
+    for index, file_name in enumerate(all_files):
+        print 'processed {}'.format(index), '{} left'.format(len(all_files) - index)
+        try:
+            check_all(file_name)
+            check_all_second(file_name)
+            log_file.write('{} is finished\n'.format(file_name))
+        except Exception, exception_text:
+            log_file.write('{}\n'.format(exception_text))
